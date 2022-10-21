@@ -5,6 +5,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reggie.Service.CategoryService;
@@ -66,6 +69,7 @@ public class SetmealController {
      * @return
      */
     @PostMapping
+    @CacheEvict(value = "Setmal",allEntries = true)
     public R<String> addSetmeal(@RequestBody SetmealDto setmealDto) {
         setmealService.addSetmealAndSetmealDish(setmealDto);
         return R.success("套餐信息保存成功");
@@ -89,6 +93,7 @@ public class SetmealController {
      * @param setmealDto
      * @return
      */
+    @CacheEvict("Setmal")
     @PutMapping
     public R<String> updateToSeteamlAndSeteamlDish(@RequestBody SetmealDto setmealDto) {
         setmealService.updateSetmealAndDish(setmealDto);
@@ -101,6 +106,13 @@ public class SetmealController {
      * @param ids
      * @return
      */
+    /**
+     * 当更新套餐数据时,自动清除缓存中的数据
+     * @param status
+     * @param ids
+     * @return
+     */
+    @CacheEvict(value = "Setmal",allEntries = true)
     @PostMapping("/status/{status}")
     public R<String> stopStatus(@PathVariable int status, Long ids) {
         Setmeal setmeal = new Setmeal();
@@ -115,6 +127,12 @@ public class SetmealController {
      * @param ids
      * @return
      */
+    /**
+     * 当删除套餐数据时,自动清除缓存中的数据
+     * @param ids
+     * @return
+     */
+    @CacheEvict(value = "Setmal",allEntries = true)
     @DeleteMapping
     public R<String> deleteSeteam(Long[] ids) {
       setmealService.deleteSetmealAndSetmealAndDish(ids);
@@ -127,6 +145,15 @@ public class SetmealController {
      * @param status
      * @return
      */
+    /**
+     * 加入缓存操作(利用了spring-Cache),
+     * Cacheable:先查缓存,缓存中没有时,再查数据库,再将数据库中的数据
+     * 存入缓存中
+     * @param categoryId
+     * @param status
+     * @return
+     */
+    @Cacheable(value = "Setmal",key = "#categoryId+'_'+#status")
     @GetMapping("/list")
     public R<List<Setmeal>> listSemealAndDish(Long categoryId,Integer status){
         QueryWrapper<Setmeal> setmealQueryWrapper = new QueryWrapper<>();
